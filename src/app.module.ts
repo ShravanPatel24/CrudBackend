@@ -1,10 +1,19 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { ProductService } from './app.service';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ProductModule } from './product/product.module';
+import { CartModule } from './cart/cart.module';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [ProductService],
+  imports: [
+    MongooseModule.forRoot(
+      'mongodb+srv://shravan:1234@cluster0.pcsmwcw.mongodb.net/test',
+      {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      },
+    ),
+    ProductModule,
+    CartModule,
+  ],
 })
 export class AppModule {}

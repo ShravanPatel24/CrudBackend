@@ -1,43 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { Product } from 'src/products/product.interface';
-import { ProductsService } from 'src/products/product.service';
-import { Cart } from './cart.interface';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Cart, CartDocument } from './cart.schema';
 
 @Injectable()
 export class CartService {
-  private items: Cart[] = [];
+  constructor(
+    @InjectModel(Cart.name)
+    private readonly cartItemModel: Model<CartDocument>,
+  ) {}
 
-  constructor(private readonly productsService: ProductsService) {}
-
-  add(productId: number, quantity: number) {
-    const product = this.productsService.getById(productId);
-    if (!product) {
-      throw new Error(`Product with ID ${productId} not found`);
-    }
-    const existingItem = this.items.find(
-      (item) => item.productId === productId,
-    );
-    if (existingItem) {
-      existingItem.quantity += quantity;
-    } else {
-      this.items.push({ productId, quantity });
-    }
-  }
-
-  getAll() {
-    return this.items.map((item) => {
-      const product = this.productsService.getById(item.productId);
-      return {
-        product,
-        quantity: item.quantity,
-      };
+  async addToCart(cartItem: Cart): Promise<void> {
+    const existingCartItem = await this.cartItemModel.findOne({
+      productId: cartItem.productId,
     });
+
+    if (existingCartItem) {
+      existingCartItem.quantity += cartItem.quantity;
+      await existingCartItem.save();
+    } else {
+      const createdCartItem = new this.cartItemModel(cartItem);
+      await createdCartItem.save();
+    }
   }
 
-  deleteByProductId(productId: number) {
-    const index = this.items.findIndex((item) => item.productId === productId);
-    if (index !== -1) {
-      this.items.splice(index, 1);
-    }
+  async getCartItems(): Promise<Cart[]> {
+    return this.cartItemModel.find().exec();
   }
 }
